@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'aioflux'
+    static_configs:
+      - targets: ['aioflux:9090']
