@@ -45,7 +45,7 @@ from aioflux.utils.monitoring import ConsoleMonitor, Monitor, PrometheusExporter
 from typing import Optional, Callable, Any, List
 
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = (
     "BaseLimiter",
