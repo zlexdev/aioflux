@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "High-performance async rate limiting and queue management"
 readme = "README.md"
 authors = [
-    {name = "zlex"}
+    {name = "zlexdev"}
 ]
 license = {text = "MIT"}
 classifiers = [

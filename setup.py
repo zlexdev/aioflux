@@ -4,7 +4,7 @@ setup(
     name="aioflux",
     version="0.1.0",
     description="High-performance async rate limiting and queueing library",
-    author="zlex",
+    author="zlexdev",
     packages=find_packages(),
     python_requires=">=3.8",
     install_requires=[
