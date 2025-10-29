@@ -4,27 +4,28 @@
 """
 
 import asyncio
-from typing import Optional, Any, Dict
-from collections import defaultdict
-from time import time
-from aioflux.core.base import Storage, now
+from typing import Any, Dict, Optional
+
+from redis.asyncio import Redis
+
+from aioflux.core.base import now, Storage
 
 
 class MemoryStorage(Storage):
     """
     Хранилище в памяти процесса.
     """
-    
+
     def __init__(self, max_size: int = 100000):
         self._data: Dict[str, Any] = {}
         self._expiry: Dict[str, float] = {}
         self._lock = asyncio.Lock()
         self._max_size = max_size
-    
+
     async def get(self, key: str) -> Optional[Any]:
         await self._cleanup_expired()
         return self._data.get(key)
-    
+
     async def set(self, key: str, val: Any, ttl: Optional[float] = None) -> None:
         async with self._lock:
             # Если места нет - выкидываем самый старый
@@ -33,29 +34,29 @@ class MemoryStorage(Storage):
                 if oldest:
                     del self._data[oldest]
                     del self._expiry[oldest]
-            
+
             self._data[key] = val
             if ttl:
                 self._expiry[key] = now() + ttl
-    
+
     async def incr(self, key: str, delta: float = 1) -> float:
         async with self._lock:
             val = self._data.get(key, 0) + delta
             self._data[key] = val
             return val
-    
+
     async def decr(self, key: str, delta: float = 1) -> float:
         return await self.incr(key, -delta)
-    
+
     async def delete(self, key: str) -> None:
         async with self._lock:
             self._data.pop(key, None)
             self._expiry.pop(key, None)
-    
+
     async def exists(self, key: str) -> bool:
         await self._cleanup_expired()
         return key in self._data
-    
+
     async def _cleanup_expired(self) -> None:
         current = now()
         expired = [k for k, exp in self._expiry.items() if exp <= current]
@@ -68,46 +69,45 @@ class RedisStorage(Storage):
         self._url = url
         self._pool_size = pool_size
         self._redis = None
-    
+
     async def _get_redis(self):
         if not self._redis:
-            import aioredis
-            self._redis = await aioredis.from_url(
+            self._redis = await Redis.from_url(
                 self._url,
                 max_connections=self._pool_size,
                 decode_responses=True
             )
         return self._redis
-    
+
     async def get(self, key: str) -> Optional[Any]:
         r = await self._get_redis()
         val = await r.get(key)
         if val and val.replace('.', '', 1).replace('-', '', 1).isdigit():
             return float(val)
         return val
-    
+
     async def set(self, key: str, val: Any, ttl: Optional[float] = None) -> None:
         r = await self._get_redis()
         if ttl:
             await r.setex(key, int(ttl), str(val))
         else:
             await r.set(key, str(val))
-    
+
     async def incr(self, key: str, delta: float = 1) -> float:
         r = await self._get_redis()
         return await r.incrbyfloat(key, delta)
-    
+
     async def decr(self, key: str, delta: float = 1) -> float:
         return await self.incr(key, -delta)
-    
+
     async def delete(self, key: str) -> None:
         r = await self._get_redis()
         await r.delete(key)
-    
+
     async def exists(self, key: str) -> bool:
         r = await self._get_redis()
         return await r.exists(key) > 0
-    
+
     async def eval_script(self, script: str, keys: list, args: list) -> Any:
         """
         Выполняем Lua скрипт в Redis.
@@ -125,11 +125,11 @@ class HybridStorage(Storage):
     холодные - в Redis для персистентности.
     Классический read-aside + write-through кэш.
     """
-    
+
     def __init__(self, redis_url: str = "redis://localhost", l1_size: int = 10000):
         self._l1 = MemoryStorage(max_size=l1_size)  # Быстрый кэш
         self._l2 = RedisStorage(redis_url)  # Постоянное хранилище
-    
+
     async def get(self, key: str) -> Optional[Any]:
         """
         Сначала смотрим в L1 (память).
@@ -142,7 +142,7 @@ class HybridStorage(Storage):
                 # Кэшируем на минуту
                 await self._l1.set(key, val, ttl=60)
         return val
-    
+
     async def set(self, key: str, val: Any, ttl: Optional[float] = None) -> None:
         """
         Пишем в оба слоя сразу (write-through).
@@ -150,7 +150,7 @@ class HybridStorage(Storage):
         """
         await self._l1.set(key, val, ttl=min(ttl, 60) if ttl else 60)
         await self._l2.set(key, val, ttl=ttl)
-    
+
     async def incr(self, key: str, delta: float = 1) -> float:
         """
         Инкремент идет только в L2 (Redis).
@@ -158,16 +158,16 @@ class HybridStorage(Storage):
         """
         await self._l1.delete(key)
         return await self._l2.incr(key, delta)
-    
+
     async def decr(self, key: str, delta: float = 1) -> float:
         """Декремент - аналогично инкременту"""
         return await self.incr(key, -delta)
-    
+
     async def delete(self, key: str) -> None:
         """Удаляем из обоих слоев"""
         await self._l1.delete(key)
         await self._l2.delete(key)
-    
+
     async def exists(self, key: str) -> bool:
         """Проверяем оба слоя"""
         return await self._l1.exists(key) or await self._l2.exists(key)

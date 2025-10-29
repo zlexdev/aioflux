@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "High-performance async rate limiting and queue management"
 readme = "README.md"
 authors = [
-    {name = "AioFlux Contributors"}
+    {name = "zlex"}
 ]
 license = {text = "MIT"}
 classifiers = [
@@ -24,7 +24,7 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "aioredis>=2.0.0",
+    "redis>=2.0.0",
     "aiohttp>=3.8.0",
 ]
 

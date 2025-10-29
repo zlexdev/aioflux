@@ -150,7 +150,7 @@ Memory footprint: <10MB для 1M tracked tokens
 
 Три реализации хранилища данных с единым интерфейсом.  
 MemoryStorage использует dict с asyncio.Lock для синхронизации.  
-RedisStorage использует aioredis с connection pooling.  
+RedisStorage использует redis с connection pooling.  
 HybridStorage комбинирует оба подхода для оптимальной производительности.
 
 ### Rate Limiters

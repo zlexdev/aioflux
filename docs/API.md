@@ -230,7 +230,7 @@ LRU eviction при достижении max_size.
 RedisStorage(url: str = "redis://localhost", pool_size: int = 10)
 ```
 
-Connection pooling через aioredis.  
+Connection pooling через redis.  
 Использует pipeline для батчинга команд.  
 Lua скрипты для атомарных операций.
 

@@ -4,11 +4,11 @@ setup(
     name="aioflux",
     version="0.1.0",
     description="High-performance async rate limiting and queueing library",
-    author="AioFlux",
+    author="zlex",
     packages=find_packages(),
     python_requires=">=3.8",
     install_requires=[
-        "aioredis>=2.0.0",
+        "redis>=5.3.1",
         "aiohttp>=3.8.0",
     ],
     extras_require={
