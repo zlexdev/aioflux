@@ -9,10 +9,10 @@ aioflux - высокопроизводительная библиотека дл
 - Сбор метрик и мониторинг
 
 Простой пример:
-    from aioflux import RateLimiter, rate_limit
+    from aioflux import LimiterFactory, rate_limit
     
     # Создаем лимитер на 100 запросов в минуту
-    limiter = RateLimiter.token_bucket(rate=100, per=60)
+    limiter = LimiterFactory.token_bucket(rate=100, per=60)
     
     # Или используем декоратор
     @rate_limit(rate=100, per=60)
@@ -20,7 +20,7 @@ aioflux - высокопроизводительная библиотека дл
         pass
 """
 
-from aioflux.core.base import Limiter, QueueBase, Storage
+from aioflux.core.base import BaseLimiter, QueueBase, Storage
 from aioflux.core.metrics import gauge, get_stats, incr, Timer, timing
 from aioflux.core.storage import HybridStorage, MemoryStorage, RedisStorage
 from aioflux.decorators.circuit_breaker import circuit_breaker, CircuitBreakerOpen
@@ -42,12 +42,13 @@ from aioflux.queues.priority import PriorityQueue
 from aioflux.utils.backoff import backoff, backoff_decorator
 from aioflux.utils.batch import batch_gather, batch_process, BatchCollector
 from aioflux.utils.monitoring import ConsoleMonitor, Monitor, PrometheusExporter
+from typing import Optional, Callable, Any, List
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = (
-    "Limiter",
+    "BaseLimiter",
     "QueueBase",
     "Storage",
     "MemoryStorage",
@@ -87,117 +88,261 @@ __all__ = (
     "Monitor",
     "ConsoleMonitor",
     "PrometheusExporter",
-    "RateLimiter",
-    "Queue",
+    "LimiterFactory",
+    "QueueFactory",
 )
 
 
-class RateLimiter:
+class LimiterFactory:
     """
     Фабрика для создания rate limiter'ов.
     Удобнее чем импортировать каждый класс отдельно.
     """
 
     @staticmethod
-    def token_bucket(rate: float, per: float = 1.0, burst: float = None, **kwargs):
+    def token_bucket(
+        rate: float,
+        per: float = 1.0,
+        burst: Optional[float] = None,
+        storage: Optional[Storage] = None,
+        scope: str = "default"
+    ):
         """
         Token Bucket - самый быстрый алгоритм.
-        
+
         Параметры:
             rate: сколько токенов даем в период
             per: период в секундах (по умолчанию 1 секунда)
             burst: максимум токенов в корзине (по умолчанию = rate)
-        
+            storage: хранилище для токенов (Redis, память и т.д.)
+            scope: имя набора лимитов (для метрик)
+
         Пример:
             # 100 запросов в минуту с burst до 150
-            limiter = RateLimiter.token_bucket(rate=100, per=60, burst=150)
+            limiter = LimiterFactory.token_bucket(rate=100, per=60, burst=150)
         """
-        return TokenBucketLimiter(rate, per, burst, **kwargs)
+        return TokenBucketLimiter(rate, per, burst, storage, scope)
 
     @staticmethod
-    def sliding_window(rate: float, per: float = 1.0, **kwargs):
+    def fast_token_bucket(
+        rate: float,
+        per: float = 1.0,
+        burst: Optional[float] = None
+    ):
+        """
+        Упрощённый и очень быстрый вариант токен-бакета.
+
+        Параметры:
+            rate: количество токенов, добавляемых за период `per`
+            per: интервал (в секундах)
+            burst: максимальное количество токенов (если None, то = rate)
+        """
+        return FastTokenBucket(rate, per, burst)
+
+    @staticmethod
+    def sliding_window(
+        rate: float,
+        per: float = 1.0,
+        storage: Optional[Storage] = None,
+        scope: str = "default"
+    ):
         """
         Sliding Window - самый точный алгоритм.
-        
+
+        Параметры:
+            rate: максимально допустимое число событий за интервал
+            per: длительность окна (в секундах)
+            storage: хранилище (по умолчанию память)
+            scope: имя набора лимитов (для метрик)
+
         Не дает делать burst'ы, строго контролирует rate в скользящем окне.
         """
-        return SlidingWindowLimiter(rate, per, **kwargs)
+        return SlidingWindowLimiter(rate, per, storage, scope)
 
     @staticmethod
-    def leaky_bucket(rate: float, capacity: float, **kwargs):
+    def redis_sliding_window(
+        rate: float,
+        per: float = 1.0,
+        storage: Optional[RedisStorage] = None,
+        scope: str = "default"
+    ):
+        """
+        Реализация скользящего окна с использованием Redis (через ZSET).
+
+        Параметры:
+            rate: максимум событий за окно
+            per: длительность окна в секундах
+            storage: RedisStorage с поддержкой eval_script
+            scope: префикс для ключей и метрик
+        """
+        return RedisSlidingWindow(rate, per, storage, scope)
+
+    @staticmethod
+    def leaky_bucket(
+        rate: float,
+        capacity: float,
+        storage: Optional[Storage] = None,
+        scope: str = "default"
+    ):
         """
         Leaky Bucket - сглаживает нагрузку.
-        
+
+        Параметры:
+            rate: скорость утечки (токенов в секунду)
+            capacity: максимальный объем ведра (лимит накопления)
+            storage: хранилище состояния (Redis, память)
+            scope: имя набора лимитов (для метрик)
+
         Хорош когда надо равномерно распределить запросы во времени.
         """
-        return LeakyBucketLimiter(rate, capacity, **kwargs)
+        return LeakyBucketLimiter(rate, capacity, storage, scope)
 
     @staticmethod
-    def adaptive(initial_rate: float = 100, **kwargs):
+    def adaptive(
+        initial_rate: float = 100,
+        min_rate: float = 10,
+        max_rate: float = 1000,
+        increase_step: float = 1.0,
+        decrease_factor: float = 0.5,
+        error_threshold: float = 0.1,
+        window: float = 60.0
+    ):
         """
         Adaptive - самонастраивающийся лимитер.
-        
+
+        Параметры:
+            initial_rate: стартовая скорость (токенов в секунду)
+            min_rate: нижний предел
+            max_rate: верхний предел
+            increase_step: насколько увеличиваем при низком уровне ошибок
+            decrease_factor: во сколько раз уменьшаем при превышении порога ошибок
+            error_threshold: доля ошибок, после которой "тормозим"
+            window: период анализа статистики (сек)
+
         Использует AIMD алгоритм: при ошибках уменьшает rate,
         при успехе - увеличивает. Сам подстраивается под нагрузку.
         """
-        return AdaptiveLimiter(initial_rate, **kwargs)
+        return AdaptiveLimiter(
+            initial_rate,
+            min_rate,
+            max_rate,
+            increase_step,
+            decrease_factor,
+            error_threshold,
+            window
+        )
 
     @staticmethod
-    def composite(*limiters):
+    def composite(limiters: List[BaseLimiter]):
         """
         Составной лимитер - комбинирует несколько.
-        
+
+        Параметры:
+            limiters: список объектов, реализующих интерфейс Limiter
+
         Полезно когда нужно ограничить и по минутам и по часам:
-            RateLimiter.composite(
-                RateLimiter.token_bucket(100, per=60),  # 100/мин
-                RateLimiter.token_bucket(1000, per=3600)  # 1000/час
-            )
+            LimiterFactory.composite([
+                LimiterFactory.token_bucket(100, per=60),  # 100/мин
+                LimiterFactory.token_bucket(1000, per=3600)  # 1000/час
+            ])
         """
-        return CompositeLimiter(list(limiters))
+        return CompositeLimiter(limiters)
 
 
-class Queue:
+class QueueFactory:
     """
     Фабрика для создания очередей.
     Разные очереди под разные задачи.
     """
 
     @staticmethod
-    def priority(workers: int = 1, **kwargs):
+    def priority(
+        workers: int = 1,
+        max_size: int = 10000,
+        priority_fn: Optional[Callable[[Any], int]] = None
+    ):
         """
         Приоритетная очередь.
+
+        Параметры:
+            workers: количество воркеров
+            max_size: максимальный размер очереди
+            priority_fn: функция вычисления приоритета (если не задан явно)
+
         Задачи с высоким priority выполняются первыми.
         """
-        return PriorityQueue(workers=workers, **kwargs)
+        return PriorityQueue(workers, max_size, priority_fn)
 
     @staticmethod
-    def fifo(workers: int = 1, **kwargs):
+    def fifo(
+        workers: int = 1,
+        max_size: int = 10000,
+        batch_size: int = 1,
+        batch_timeout: float = 1.0,
+        batch_fn: Optional[Callable[[List[Any]], Any]] = None
+    ):
         """
         FIFO очередь с батчингом.
+
+        Параметры:
+            workers: количество параллельных воркеров
+            max_size: максимальный размер очереди
+            batch_size: сколько задач собираем в одну пачку
+            batch_timeout: максимум ожидания, пока наберется batch
+            batch_fn: функция обработки пачки (если задана, то выполняется вместо отдельных)
+
         Может накапливать задачи и обрабатывать пачками - экономит на DB/API вызовах.
         """
-        return FIFOQueue(workers=workers, **kwargs)
+        return FIFOQueue(workers, max_size, batch_size, batch_timeout, batch_fn)
 
     @staticmethod
-    def delay(workers: int = 1, **kwargs):
+    def delay(
+        workers: int = 1,
+        max_size: int = 10000
+    ):
         """
         Очередь с отложенным выполнением.
+
+        Параметры:
+            workers: количество воркеров
+            max_size: максимум элементов в очереди
+
         Можно запланировать задачу на потом.
         """
-        return DelayQueue(workers=workers, **kwargs)
+        return DelayQueue(workers, max_size)
 
     @staticmethod
-    def dedupe(workers: int = 1, **kwargs):
+    def dedupe(
+        workers: int = 1,
+        max_size: int = 10000,
+        ttl: float = 300.0,
+        key_fn: Optional[Callable[[Any], str]] = None
+    ):
         """
         Очередь с дедупликацией.
+
+        Параметры:
+            workers: количество воркеров
+            max_size: максимальный размер очереди
+            ttl: сколько секунд хранить ключ в `_seen`
+            key_fn: функция генерации ключа для элемента
+
         Автоматом отсеивает одинаковые задачи.
         """
-        return DedupeQueue(workers=workers, **kwargs)
+        return DedupeQueue(workers, max_size, ttl, key_fn)
 
     @staticmethod
-    def broadcast(**kwargs):
+    def broadcast(max_size: int = 10000):
         """
         Broadcast очередь (pub/sub).
+
+        Параметры:
+            max_size: максимальный размер очереди для каждого подписчика
+
         Одна задача уходит всем подписчикам.
         """
-        return BroadcastQueue(**kwargs)
+        return BroadcastQueue(max_size)
+
+
+RateLimiter = LimiterFactory
+Queue = QueueFactory

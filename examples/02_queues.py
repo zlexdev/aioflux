@@ -4,7 +4,7 @@
 """
 
 import asyncio
-from aioflux import Queue, queued
+from aioflux import QueueFactory, queued
 
 
 async def example_1_priority_queue():
@@ -14,7 +14,7 @@ async def example_1_priority_queue():
     """
     print("\n=== Пример 1: Приоритетная очередь ===\n")
     
-    queue = Queue.priority(workers=2)
+    queue = QueueFactory.priority(workers=2)
     await queue.start()
     
     results = []
@@ -52,7 +52,7 @@ async def example_2_fifo_batching():
         await asyncio.sleep(0.1)
     
     # Создаем очередь: батчи по 5 элементов или каждые 2 секунды
-    queue = Queue.fifo(
+    queue = QueueFactory.fifo(
         workers=2,
         batch_size=5,
         batch_timeout=2.0,
@@ -81,7 +81,7 @@ async def example_3_delayed_queue():
     """
     print("\n=== Пример 3: Отложенное выполнение ===\n")
     
-    queue = Queue.delay(workers=1)
+    queue = QueueFactory.delay(workers=1)
     await queue.start()
     
     async def task(name: str):
@@ -114,7 +114,7 @@ async def example_4_dedupe():
         executed.append(item_id)
         await asyncio.sleep(0.1)
     
-    queue = Queue.dedupe(
+    queue = QueueFactory.dedupe(
         workers=2,
         ttl=5.0,  # Помним дубликаты 5 секунд
         key_fn=lambda x: str(x)  # Как вычислять ключ дедупликации
@@ -142,7 +142,7 @@ async def example_5_decorator():
     """
     print("\n=== Пример 5: Декоратор @queued ===\n")
     
-    queue = Queue.fifo(workers=2)
+    queue = QueueFactory.fifo(workers=2)
     await queue.start()
     
     @queued(queue=queue, priority=5)

@@ -4,7 +4,7 @@
 """
 
 import asyncio
-from aioflux import RateLimiter, RedisStorage, HybridStorage
+from aioflux import LimiterFactory, RedisStorage, HybridStorage
 
 
 async def example_1_redis_limiter():
@@ -23,7 +23,7 @@ async def example_1_redis_limiter():
     storage = RedisStorage("redis://localhost:6379")
     
     # Лимитер на 100 запросов в минуту - ОБЩИЙ для всех инстансов
-    limiter = RateLimiter.token_bucket(
+    limiter = LimiterFactory.token_bucket(
         rate=100,
         per=60,
         storage=storage,
@@ -53,7 +53,7 @@ async def example_2_per_user_redis():
     storage = RedisStorage("redis://localhost:6379")
     
     # Каждый пользователь имеет свой лимит
-    limiter = RateLimiter.token_bucket(
+    limiter = LimiterFactory.token_bucket(
         rate=10,
         per=60,
         storage=storage,
@@ -85,7 +85,7 @@ async def example_3_hybrid_storage():
         l1_size=1000
     )
     
-    limiter = RateLimiter.token_bucket(
+    limiter = LimiterFactory.token_bucket(
         rate=100,
         per=1.0,
         storage=storage
@@ -114,7 +114,7 @@ async def example_4_distributed_system():
     storage = RedisStorage("redis://localhost:6379")
     
     # Глобальный лимит на API - 1000 запросов в секунду
-    global_limiter = RateLimiter.token_bucket(
+    global_limiter = LimiterFactory.token_bucket(
         rate=1000,
         per=1.0,
         storage=storage,
@@ -122,7 +122,7 @@ async def example_4_distributed_system():
     )
     
     # Лимит на пользователя - 10 в секунду
-    user_limiter = RateLimiter.token_bucket(
+    user_limiter = LimiterFactory.token_bucket(
         rate=10,
         per=1.0,
         storage=storage,
@@ -130,7 +130,7 @@ async def example_4_distributed_system():
     )
     
     # Лимит на endpoint - 100 в секунду
-    endpoint_limiter = RateLimiter.token_bucket(
+    endpoint_limiter = LimiterFactory.token_bucket(
         rate=100,
         per=1.0,
         storage=storage,
@@ -170,7 +170,7 @@ async def example_5_stats_monitoring():
     print("\n=== Пример 5: Мониторинг ===\n")
     
     storage = RedisStorage("redis://localhost:6379")
-    limiter = RateLimiter.token_bucket(
+    limiter = LimiterFactory.token_bucket(
         rate=50,
         per=1.0,
         burst=75,

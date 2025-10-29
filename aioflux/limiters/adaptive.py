@@ -1,11 +1,11 @@
 import asyncio
 from typing import Any, Dict
 
-from aioflux.core.base import Limiter, now
+from aioflux.core.base import BaseLimiter, now
 from aioflux.core.metrics import gauge, incr
 
 
-class AdaptiveLimiter(Limiter):
+class AdaptiveLimiter(BaseLimiter):
     """
     Адаптивный лимитер — динамически подстраивает скорость под ошибки и нагрузку.
 

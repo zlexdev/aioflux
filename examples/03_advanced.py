@@ -4,7 +4,7 @@
 
 import asyncio
 from aioflux import (
-    RateLimiter, Queue, rate_limit, queued,
+    LimiterFactory, QueueFactory, rate_limit, queued,
     circuit_breaker, CircuitBreakerOpen,
     get_stats, ConsoleMonitor
 )
@@ -18,9 +18,9 @@ async def example_1_composite_limiter():
     print("\n=== Пример 1: Составной лимитер ===\n")
     
     # 10 rpm И 50 rph
-    limiter = RateLimiter.composite(
-        RateLimiter.token_bucket(rate=10, per=60),
-        RateLimiter.token_bucket(rate=50, per=3600)
+    limiter = LimiterFactory.composite(
+        LimiterFactory.token_bucket(rate=10, per=60),
+        LimiterFactory.token_bucket(rate=50, per=3600)
     )
     
     # Проверяем оба лимита
@@ -74,10 +74,10 @@ async def example_3_full_stack():
     print("\n=== Пример 3: Полный стек ===\n")
     
     # Настраиваем rate limiter
-    limiter = RateLimiter.token_bucket(rate=5, per=1.0)
+    limiter = LimiterFactory.token_bucket(rate=5, per=1.0)
     
     # Настраиваем очередь
-    queue = Queue.priority(workers=2)
+    queue = QueueFactory.priority(workers=2)
     await queue.start()
     
     # Функция с тремя декораторами
@@ -107,7 +107,7 @@ async def example_4_adaptive_limiter():
     """
     print("\n=== Пример 4: Адаптивный лимитер ===\n")
     
-    limiter = RateLimiter.adaptive(
+    limiter = LimiterFactory.adaptive(
         initial_rate=10,
         min_rate=5,
         max_rate=20
@@ -149,7 +149,7 @@ async def example_5_monitoring():
     await monitor.start()
     
     # Делаем какую-то работу
-    limiter = RateLimiter.token_bucket(rate=10, per=1.0)
+    limiter = LimiterFactory.token_bucket(rate=10, per=1.0)
     
     for i in range(50):
         await limiter.acquire(f"user_{i % 3}")

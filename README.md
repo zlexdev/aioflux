@@ -17,10 +17,10 @@ pip install aioflux
 ### Базовый rate limiting
 
 ```python
-from aioflux import RateLimiter
+from aioflux import LimiterFactory
 
 
-limiter = RateLimiter.token_bucket(rate=100, per=60)
+limiter = LimiterFactory.token_bucket(rate=100, per=60)
 
 if await limiter.acquire("user_123"):
     await process_request()
@@ -40,10 +40,10 @@ async def api_call():
 ### Приоритетная очередь
 
 ```python
-from aioflux import Queue
+from aioflux import QueueFactory
 
 
-queue = Queue.priority(workers=5)
+queue = QueueFactory.priority(workers=5)
 await queue.start()
 
 await queue.put(task, priority=10)
@@ -52,9 +52,9 @@ await queue.put(task, priority=10)
 ### Составной лимитер
 
 ```python
-limiter = RateLimiter.composite(
-    RateLimiter.token_bucket(rate=100, per=60),
-    RateLimiter.token_bucket(rate=1000, per=3600)
+limiter = LimiterFactory.composite(
+    LimiterFactory.token_bucket(rate=100, per=60),
+    LimiterFactory.token_bucket(rate=1000, per=3600)
 )
 ```
 

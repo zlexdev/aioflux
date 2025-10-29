@@ -2,12 +2,12 @@ import asyncio
 import sys
 sys.path.insert(0, '/home/claude')
 
-from aioflux import RateLimiter, Queue, rate_limit, queued
+from aioflux import LimiterFactory, QueueFactory, rate_limit, queued
 
 
 async def test_token_bucket():
     print("Testing Token Bucket...")
-    limiter = RateLimiter.token_bucket(rate=5, per=1.0)
+    limiter = LimiterFactory.token_bucket(rate=5, per=1.0)
     
     accepted = 0
     rejected = 0
@@ -25,7 +25,7 @@ async def test_token_bucket():
 
 async def test_priority_queue():
     print("Testing Priority Queue...")
-    queue = Queue.priority(workers=2)
+    queue = QueueFactory.priority(workers=2)
     await queue.start()
     
     results = []
@@ -49,7 +49,7 @@ async def test_rate_limit_decorator():
     print("Testing @rate_limit decorator...")
     
     call_count = [0]
-    limiter = RateLimiter.token_bucket(rate=3, per=1.0)
+    limiter = LimiterFactory.token_bucket(rate=3, per=1.0)
     
     @rate_limit(limiter=limiter)
     async def limited_func():
@@ -75,7 +75,7 @@ async def test_fifo_batching():
     async def batch_processor(items):
         batches.append(len(items))
     
-    queue = Queue.fifo(workers=1, batch_size=3, batch_timeout=0.5, batch_fn=batch_processor)
+    queue = QueueFactory.fifo(workers=1, batch_size=3, batch_timeout=0.5, batch_fn=batch_processor)
     await queue.start()
     
     for i in range(7):
@@ -92,7 +92,7 @@ async def test_fifo_batching():
 async def test_adaptive_limiter():
     print("Testing Adaptive Limiter...")
     
-    limiter = RateLimiter.adaptive(initial_rate=10, min_rate=5, max_rate=20)
+    limiter = LimiterFactory.adaptive(initial_rate=10, min_rate=5, max_rate=20)
     
     initial_stats = await limiter.get_stats("test")
     print(f"Initial rate: {initial_stats['current_rate']}")

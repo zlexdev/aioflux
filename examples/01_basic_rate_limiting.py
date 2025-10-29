@@ -4,7 +4,7 @@
 """
 
 import asyncio
-from aioflux import RateLimiter, rate_limit
+from aioflux import LimiterFactory, rate_limit
 
 
 async def example_1_simple_limiter():
@@ -14,7 +14,7 @@ async def example_1_simple_limiter():
     """
     print("\n=== Пример 1: Простой лимитер ===\n")
     
-    limiter = RateLimiter.token_bucket(rate=5, per=1.0)
+    limiter = LimiterFactory.token_bucket(rate=5, per=1.0)
     
     # Пытаемся сделать 10 запросов
     for i in range(10):
@@ -53,7 +53,7 @@ async def example_3_burst():
     print("\n=== Пример 3: Burst capacity ===\n")
     
     # 10 запросов в секунду, но можем сделать burst до 20
-    limiter = RateLimiter.token_bucket(rate=10, per=1.0, burst=20)
+    limiter = LimiterFactory.token_bucket(rate=10, per=1.0, burst=20)
     
     # Делаем 15 запросов сразу - burst поможет
     print("Делаем 15 запросов подряд:")
@@ -71,7 +71,7 @@ async def example_4_per_user():
     """
     print("\n=== Пример 4: Лимиты на пользователя ===\n")
     
-    limiter = RateLimiter.token_bucket(rate=3, per=1.0)
+    limiter = LimiterFactory.token_bucket(rate=3, per=1.0)
     
     # User 1 делает 4 запроса
     print("User 1 делает запросы:")
@@ -97,7 +97,7 @@ async def example_5_stats():
     """
     print("\n=== Пример 5: Статистика ===\n")
     
-    limiter = RateLimiter.token_bucket(rate=10, per=1.0, burst=15)
+    limiter = LimiterFactory.token_bucket(rate=10, per=1.0, burst=15)
     
     # Делаем несколько запросов
     for i in range(7):

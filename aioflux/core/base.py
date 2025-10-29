@@ -52,7 +52,7 @@ class Storage(ABC):
         pass
 
 
-class Limiter(ABC):
+class BaseLimiter(ABC):
     """
     Базовый класс для rate limiter'ов.
     Главная задача - контролировать скорость запросов.

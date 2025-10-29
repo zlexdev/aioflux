@@ -1,12 +1,12 @@
 import asyncio
 from typing import Any, Dict, Optional
 
-from aioflux.core.base import Limiter, now, Storage
+from aioflux.core.base import BaseLimiter, now, Storage
 from aioflux.core.metrics import gauge, incr
 from aioflux.core.storage import MemoryStorage
 
 
-class TokenBucketLimiter(Limiter):
+class TokenBucketLimiter(BaseLimiter):
     """
     Классический токен-бакет с хранением состояния в Storage (например Redis).
 
@@ -118,7 +118,7 @@ class TokenBucketLimiter(Limiter):
         }
 
 
-class FastTokenBucket(Limiter):
+class FastTokenBucket(BaseLimiter):
     """
     Упрощённый и очень быстрый вариант токен-бакета.
 

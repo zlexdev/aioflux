@@ -1,9 +1,9 @@
-from aioflux.core.base import Limiter
+from aioflux.core.base import BaseLimiter
 from aioflux.core.metrics import incr
 from typing import Dict, Any, List
 
 
-class CompositeLimiter(Limiter):
+class CompositeLimiter(BaseLimiter):
     """
     Комбинированный лимитер.
 
@@ -19,7 +19,7 @@ class CompositeLimiter(Limiter):
         → запрос пройдет, только если оба лимитера внутри "ok".
     """
 
-    def __init__(self, limiters: List[Limiter]):
+    def __init__(self, limiters: List[BaseLimiter]):
         """
         limiters — список объектов, реализующих интерфейс Limiter.
         """

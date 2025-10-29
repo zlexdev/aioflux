@@ -1,12 +1,12 @@
 import asyncio
 from typing import Any, Dict, Optional
 
-from aioflux.core.base import Limiter, now, Storage
+from aioflux.core.base import BaseLimiter, now, Storage
 from aioflux.core.metrics import gauge, incr
 from aioflux.core.storage import MemoryStorage
 
 
-class LeakyBucketLimiter(Limiter):
+class LeakyBucketLimiter(BaseLimiter):
     """
     Лимитер по принципу "протекающего ведра" (Leaky Bucket).
 

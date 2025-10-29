@@ -4,7 +4,7 @@
 """
 
 import asyncio
-from aioflux import RateLimiter, Queue, rate_limit, queued, circuit_breaker
+from aioflux import LimiterFactory, QueueFactory, rate_limit, queued, circuit_breaker
 
 
 # Сценарий 1: API Gateway
@@ -15,13 +15,13 @@ class APIGateway:
     
     def __init__(self):
         # Глобальный лимит на весь API
-        self.global_limiter = RateLimiter.token_bucket(rate=1000, per=1.0)
+        self.global_limiter = LimiterFactory.token_bucket(rate=1000, per=1.0)
         
         # Лимит на пользователя: 10 запросов в секунду, burst до 20
-        self.user_limiter = RateLimiter.token_bucket(rate=10, per=1.0, burst=20)
+        self.user_limiter = LimiterFactory.token_bucket(rate=10, per=1.0, burst=20)
         
         # Лимит на IP адрес (защита от DDoS)
-        self.ip_limiter = RateLimiter.sliding_window(rate=50, per=1.0)
+        self.ip_limiter = LimiterFactory.sliding_window(rate=50, per=1.0)
     
     async def handle_request(self, user_id: str, ip: str, endpoint: str):
         """Обработка запроса с несколькими уровнями лимитов"""
@@ -57,10 +57,10 @@ class JobProcessor:
     
     def __init__(self):
         # Приоритетная очередь для критичных задач
-        self.critical_queue = Queue.priority(workers=10)
+        self.critical_queue = QueueFactory.priority(workers=10)
         
         # FIFO очередь с батчингом для массовых операций
-        self.bulk_queue = Queue.fifo(
+        self.bulk_queue = QueueFactory.fifo(
             workers=5,
             batch_size=100,
             batch_timeout=5.0,
@@ -109,13 +109,13 @@ class ExternalAPIClient:
     
     def __init__(self):
         # API имеет лимиты: 100 запросов в минуту и 1000 в час
-        self.limiter = RateLimiter.composite(
-            RateLimiter.token_bucket(rate=100, per=60, burst=120),
-            RateLimiter.token_bucket(rate=1000, per=3600)
+        self.limiter = LimiterFactory.composite(
+            LimiterFactory.token_bucket(rate=100, per=60, burst=120),
+            LimiterFactory.token_bucket(rate=1000, per=3600)
         )
         
         # Очередь с дедупликацией - не дублируем запросы
-        self.request_queue = Queue.dedupe(workers=5, ttl=60.0)
+        self.request_queue = QueueFactory.dedupe(workers=5, ttl=60.0)
     
     async def start(self):
         await self.request_queue.start()
@@ -141,7 +141,7 @@ class DataPipeline:
     
     def __init__(self):
         # Адаптивный лимитер - подстраивается под нагрузку БД
-        self.db_limiter = RateLimiter.adaptive(
+        self.db_limiter = LimiterFactory.adaptive(
             initial_rate=100,
             min_rate=10,
             max_rate=500,
@@ -149,7 +149,7 @@ class DataPipeline:
         )
         
         # Батчинг для вставки в БД
-        self.insert_queue = Queue.fifo(
+        self.insert_queue = QueueFactory.fifo(
             workers=3,
             batch_size=1000,
             batch_timeout=2.0,

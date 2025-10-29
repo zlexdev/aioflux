@@ -2,12 +2,12 @@ import asyncio
 from bisect import bisect_left, insort
 from typing import Any, Dict, List, Optional
 
-from aioflux.core.base import Limiter, now, Storage
+from aioflux.core.base import BaseLimiter, now, Storage
 from aioflux.core.metrics import incr
 from aioflux.core.storage import MemoryStorage, RedisStorage
 
 
-class SlidingWindowLimiter(Limiter):
+class SlidingWindowLimiter(BaseLimiter):
     """
     Лимитер на основе скользящего окна (sliding window).
 
@@ -91,7 +91,7 @@ class SlidingWindowLimiter(Limiter):
             }
 
 
-class RedisSlidingWindow(Limiter):
+class RedisSlidingWindow(BaseLimiter):
     """
     Реализация скользящего окна с использованием Redis (через ZSET).
 

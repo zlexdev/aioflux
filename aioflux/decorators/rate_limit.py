@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Optional, Callable, Any
-from aioflux.core.base import Limiter
-from aioflux.limiters.token_bucket import TokenBucketLimiter
+from aioflux.core.base import BaseLimiter
+from aioflux.limiters.token_bucket import TokenBucketBaseLimiter
 from aioflux.core.storage import Storage
 import asyncio
 
@@ -14,7 +14,7 @@ def rate_limit(
     storage: Optional[Storage] = None,
     scope: str = "default",
     key_fn: Optional[Callable[..., str]] = None,
-    limiter: Optional[Limiter] = None
+    limiter: Optional[BaseLimiter] = None
 ):
     if limiter is None:
         if strategy == "token_bucket":
@@ -52,7 +52,7 @@ def rate_limit_sync(
     storage: Optional[Storage] = None,
     scope: str = "default",
     key_fn: Optional[Callable[..., str]] = None,
-    limiter: Optional[Limiter] = None
+    limiter: Optional[BaseLimiter] = None
 ):
     if limiter is None:
         if strategy == "token_bucket":
