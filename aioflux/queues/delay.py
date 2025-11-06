@@ -3,7 +3,8 @@ from dataclasses import dataclass, field
 from heapq import heappop, heappush
 from typing import Any
 
-from aioflux.core.base import now, QueueBase
+from aioflux.utils.common import now
+from aioflux.queues.base.base import BaseQueue
 from aioflux.core.metrics import gauge, incr
 
 
@@ -14,7 +15,7 @@ class DelayedItem:
     item: Any = field(compare=False)
 
 
-class DelayQueue(QueueBase):
+class DelayQueue(BaseQueue):
     """
     Очередь с отложенным выполнением (Delay Queue).
 

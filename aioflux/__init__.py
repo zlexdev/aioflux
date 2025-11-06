@@ -20,13 +20,19 @@ aioflux - высокопроизводительная библиотека дл
         pass
 """
 
-from aioflux.core.base import BaseLimiter, QueueBase, Storage
+from typing import Any, Callable, List, Optional
+
 from aioflux.core.metrics import gauge, get_stats, incr, Timer, timing
-from aioflux.core.storage import HybridStorage, MemoryStorage, RedisStorage
+from aioflux.core.storage.base import Storage
+from aioflux.core.storage.hybrid import HybridStorage
+from aioflux.core.storage.memory import MemoryStorage
+from aioflux.core.storage.redis_ import RedisStorage
 from aioflux.decorators.circuit_breaker import circuit_breaker, CircuitBreakerOpen
 from aioflux.decorators.queue import queued, queued_sync
 from aioflux.decorators.rate_limit import rate_limit, rate_limit_sync
+from aioflux.flux import BatchFlux, FluxConfig, PriorityFlux, QueueFlux
 from aioflux.limiters.adaptive import AdaptiveLimiter
+from aioflux.limiters.base import BaseLimiter
 from aioflux.limiters.composite import CompositeLimiter
 from aioflux.limiters.leaky_bucket import LeakyBucketLimiter
 from aioflux.limiters.sliding_window import RedisSlidingWindow, SlidingWindowLimiter
@@ -34,6 +40,7 @@ from aioflux.limiters.token_bucket import FastTokenBucket, TokenBucketLimiter
 from aioflux.managers.coordinator import Coordinator
 from aioflux.managers.pool import WorkerPool
 from aioflux.managers.scheduler import Scheduler
+from aioflux.queues.base.base import BaseQueue
 from aioflux.queues.broadcast import BroadcastQueue
 from aioflux.queues.dedupe import DedupeQueue
 from aioflux.queues.delay import DelayQueue
@@ -42,18 +49,11 @@ from aioflux.queues.priority import PriorityQueue
 from aioflux.utils.backoff import backoff, backoff_decorator
 from aioflux.utils.batch import batch_gather, batch_process, BatchCollector
 from aioflux.utils.monitoring import ConsoleMonitor, Monitor, PrometheusExporter
-from typing import Optional, Callable, Any, List
 
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 __all__ = (
-    "BaseLimiter",
-    "QueueBase",
-    "Storage",
-    "MemoryStorage",
-    "RedisStorage",
-    "HybridStorage",
     "get_stats",
     "incr",
     "gauge",
@@ -90,6 +90,10 @@ __all__ = (
     "PrometheusExporter",
     "LimiterFactory",
     "QueueFactory",
+    "FluxConfig",
+    'PriorityFlux',
+    'QueueFlux',
+    'BatchFlux'
 )
 
 

@@ -1,4 +1,4 @@
-from aioflux.core.base import BaseLimiter
+from aioflux.limiters.base import BaseLimiter
 from aioflux.core.metrics import incr
 from typing import Dict, Any, List
 

@@ -4,7 +4,9 @@
 """
 
 import asyncio
-from aioflux import LimiterFactory, RedisStorage, HybridStorage
+from aioflux import LimiterFactory
+from aioflux.core.storage.redis_ import RedisStorage
+from aioflux.core.storage.hybrid import HybridStorage
 
 
 async def example_1_redis_limiter():

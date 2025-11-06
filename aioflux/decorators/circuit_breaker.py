@@ -1,6 +1,6 @@
 from functools import wraps
 from typing import Callable, Any
-from aioflux.core.base import now
+from aioflux.utils.common import now
 from aioflux.core.metrics import incr
 import asyncio
 

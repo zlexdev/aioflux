@@ -1,12 +1,12 @@
 from functools import wraps
 from typing import Optional, Callable, Any
-from aioflux.core.base import QueueBase
+from aioflux.queues.base.base import BaseQueue
 from aioflux.queues.fifo import FIFOQueue
 import asyncio
 
 
 def queued(
-    queue: Optional[QueueBase] = None,
+    queue: Optional[BaseQueue] = None,
     priority: Optional[int] = None,
     priority_fn: Optional[Callable[..., int]] = None,
     workers: int = 1
@@ -57,7 +57,7 @@ def queued(
 
 
 def queued_sync(
-    queue: Optional[QueueBase] = None,
+    queue: Optional[BaseQueue] = None,
     priority: Optional[int] = None,
     priority_fn: Optional[Callable[..., int]] = None,
     workers: int = 1

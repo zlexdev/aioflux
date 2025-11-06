@@ -1,8 +1,8 @@
 from functools import wraps
 from typing import Optional, Callable, Any
-from aioflux.core.base import BaseLimiter
-from aioflux.limiters.token_bucket import TokenBucketBaseLimiter
-from aioflux.core.storage import Storage
+from aioflux.limiters.base import BaseLimiter
+from aioflux.limiters.token_bucket import TokenBucketLimiter
+from aioflux.core.storage.base import Storage
 import asyncio
 
 

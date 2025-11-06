@@ -1,10 +1,10 @@
-from aioflux.core.base import QueueBase
+from aioflux.queues.base.base import BaseQueue
 from aioflux.core.metrics import incr, gauge, Timer
 from typing import Any, Optional, Callable, List
 import asyncio
 
 
-class FIFOQueue(QueueBase):
+class FIFOQueue(BaseQueue):
     """
     Очередь FIFO (первым пришёл — первым ушёл).
 

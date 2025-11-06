@@ -3,7 +3,7 @@ import uuid
 from typing import Optional
 
 from aioflux.core.metrics import incr
-from aioflux.core.storage import RedisStorage
+from aioflux.core.storage.redis_ import RedisStorage
 
 
 class Coordinator:

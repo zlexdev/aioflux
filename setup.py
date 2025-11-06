@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="aioflux",
-    version="0.1.1",
+    version="0.1.2",
     description="High-performance async rate limiting and queueing library",
     author="zlexdev",
     packages=find_packages(),

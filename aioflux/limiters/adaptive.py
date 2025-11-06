@@ -1,7 +1,8 @@
 import asyncio
 from typing import Any, Dict
 
-from aioflux.core.base import BaseLimiter, now
+from aioflux.utils.common import now
+from aioflux.limiters.base import BaseLimiter
 from aioflux.core.metrics import gauge, incr
 
 

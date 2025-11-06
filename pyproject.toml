@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aioflux"
-version = "0.1.1"
+version = "0.1.2"
 description = "High-performance async rate limiting and queue management"
 readme = "README.md"
 authors = [

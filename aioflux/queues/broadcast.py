@@ -1,11 +1,11 @@
 import asyncio
 from typing import Any, List
 
-from aioflux.core.base import QueueBase
+from aioflux.queues.base.base import BaseQueue
 from aioflux.core.metrics import gauge, incr
 
 
-class BroadcastQueue(QueueBase):
+class BroadcastQueue(BaseQueue):
     """
     Очередь вещания (Broadcast Queue).
 

@@ -1,11 +1,11 @@
-from aioflux.core.base import QueueBase
+from aioflux.queues.base.base import BaseQueue
 from aioflux.core.metrics import incr, gauge
 from typing import Any, Optional, Callable, Set
 import asyncio
 import hashlib
 
 
-class DedupeQueue(QueueBase):
+class DedupeQueue(BaseQueue):
     """
     Очередь с дедупликацией (Dedupe Queue).
 

@@ -1,5 +1,5 @@
 from typing import Callable, Dict, Optional, List
-from aioflux.core.base import now
+from aioflux.utils.common import now
 from aioflux.core.metrics import incr
 import asyncio
 from dataclasses import dataclass

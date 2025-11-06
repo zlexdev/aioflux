@@ -4,7 +4,7 @@ from heapq import heappop, heappush
 from time import time
 from typing import Any, Callable, Optional
 
-from aioflux.core.base import QueueBase
+from aioflux.queues.base.base import BaseQueue
 from aioflux.core.metrics import gauge, incr, Timer
 
 
@@ -19,7 +19,7 @@ class PriorityItem:
     timestamp: float = field(compare=False)
 
 
-class PriorityQueue(QueueBase):
+class PriorityQueue(BaseQueue):
     """
     Очередь с приоритетом (Priority Queue).
 
